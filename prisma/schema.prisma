@@ -1,0 +1,228 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+generator nestjsDto {
+  provider                        = "prisma-generator-nestjs-dto"
+  output                          = "../src"
+  outputToNestJsResourceStructure = "true"
+  exportRelationModifierClasses   = "true"
+  reExport                        = "false"
+  createDtoPrefix                 = "Create"
+  updateDtoPrefix                 = "Update"
+  dtoSuffix                       = "Dto"
+  entityPrefix                    = ""
+  entitySuffix                    = ""
+  fileNamingStyle                 = "camel"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model Assembleia {
+  ///@DtoCreateOptional
+  ///@DtoUpdateOptional
+  id                   String   @id @default(auto()) @map("_id") @db.ObjectId
+  nome                 String
+  finalidade           Int
+  videoconferencia     Boolean?
+  ehAGOE               Boolean?
+  tipoPresenca         Int?
+  status               Int?
+  dataInicio           String?
+  horaInicio           String?
+  dataFim              String?
+  dataInicioInscricoes String?
+  dataFimInscricoes    String?
+
+  pautas        Pauta[]
+  bvds          Bvd[]
+  participantes Participante[]
+
+  ///@DtoRelationCanCreateOnCreate
+  ///@DtoRelationCanConnectOnCreate
+  ///@DtoRelationCanCreateOnUpdate
+  ///@DtoRelationCanConnectOnUpdate
+  empresa   Empresa? @relation(fields: [empresaId], references: [id])
+  empresaId String?  @db.ObjectId
+
+
+  @@map("Assembleias")
+}
+
+model Empresa {
+  ///@DtoCreateOptional
+  ///@DtoUpdateOptional
+  id           String       @id @default(auto()) @map("_id") @db.ObjectId
+  nomeFantasia String
+  razaoSocial  String
+  email        String
+  cnpj         String
+  assembleias  Assembleia[]
+
+  funcionarios Funcionario[]
+
+  @@map("Empresas")
+}
+
+model Funcionario {
+  ///@DtoCreateOptional
+  ///@DtoUpdateOptional
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  nome  String?
+  email String?
+  ///@DtoRelationCanCreateOnCreate
+  ///@DtoRelationCanConnectOnCreate
+  ///@DtoRelationCanCreateOnUpdate
+  ///@DtoRelationCanConnectOnUpdate
+  empresa   Empresa? @relation(fields: [empresaId], references: [id])
+  empresaId String?  @db.ObjectId
+
+  @@map("Funcionarios")
+}
+
+model Participante {
+  ///@DtoCreateOptional
+  ///@DtoUpdateOptional
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  nome                  String?
+  email                 String?  @unique
+  hash                  String?
+  hashedRT              String?
+  status                Int?
+  quantidadeON          Int?
+  quantidadePN          Int?
+  quantidadeCotas       Int?
+  tipoParticipante      Int?
+  participacao          Int?
+  permissaoParticipante Int?
+  podeVotar             Boolean?
+  password              String?
+
+  cpfcnpj String? @unique
+
+
+  ///@DtoRelationCanCreateOnCreate
+  ///@DtoRelationCanConnectOnCreate
+  ///@DtoRelationCanCreateOnUpdate
+  ///@DtoRelationCanConnectOnUpdate
+  assembleia      Assembleia? @relation(fields: [assembleiaId], references: [id])
+  assembleiaId    String?     @db.ObjectId
+  bvdId           String?     @db.ObjectId
+  representanteId String?     @db.ObjectId
+
+  ///@DtoRelationCanCreateOnCreate
+  ///@DtoRelationCanConnectOnCreate
+  ///@DtoRelationCanCreateOnUpdate
+  ///@DtoRelationCanConnectOnUpdate
+  votos Voto[]
+
+  representante Participante?  @relation("RepresentanteOutorgantes", fields: [representanteId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  outorgantes   Participante[] @relation("RepresentanteOutorgantes")
+  bvd           Bvd?           @relation(fields: [bvdId], references: [id])
+
+  @@map("Participantes")
+}
+
+model Pauta {
+  ///@DtoCreateOptional
+  ///@DtoUpdateOptional
+  id              String  @id @default(auto()) @map("_id") @db.ObjectId
+  ordem           Int?
+  descricao       String?
+  status          Int?
+  tipoVoto        Int?
+  ondeAparece     Int?
+  tipoAcaoVotante Int?
+  abstencao       String?
+  naoVotou        String?
+
+
+  assembleiaId String? @db.ObjectId
+
+  escolhas Escolha[]
+  votos    Voto[]
+
+  ///@DtoRelationCanCreateOnCreate
+  ///@DtoRelationCanConnectOnCreate
+  ///@DtoRelationCanCreateOnUpdate
+  ///@DtoRelationCanConnectOnUpdate
+  assembleia Assembleia? @relation(fields: [assembleiaId], references: [id])
+
+  @@map("Pautas")
+}
+
+model Escolha {
+  ///@DtoCreateOptional
+  ///@DtoUpdateOptional
+  id    String @id @default(auto()) @map("_id") @db.ObjectId
+  ordem Int
+  opcao String
+  votos Voto[]
+
+  totalDeVotos Int?
+
+  pautaId String? @db.ObjectId
+
+  ///@DtoRelationCanCreateOnCreate
+  ///@DtoRelationCanConnectOnCreate
+  ///@DtoRelationCanCreateOnUpdate
+  ///@DtoRelationCanConnectOnUpdate
+  pauta Pauta? @relation(fields: [pautaId], references: [id])
+  @@map("Escolhas")
+}
+
+model Bvd {
+  ///@DtoCreateOptional
+  ///@DtoUpdateOptional
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+
+  assembleiaId String? @db.ObjectId
+
+  criadoEm      String
+  participantes Participante[]
+
+  ///@DtoRelationCanCreateOnCreate
+  ///@DtoRelationCanConnectOnCreate
+  ///@DtoRelationCanCreateOnUpdate
+  ///@DtoRelationCanConnectOnUpdate
+  assembleia Assembleia? @relation(fields: [assembleiaId], references: [id])
+  @@map("Bvds")
+}
+model Voto {
+  ///@DtoCreateOptional
+  ///@DtoUpdateOptional
+  id              String @id @default(auto()) @map("_id") @db.ObjectId
+  quantidadeVotos Int?
+
+  escolhaId      String? @db.ObjectId
+  participanteId String? @db.ObjectId
+
+  ///@DtoRelationCanCreateOnCreate
+  ///@DtoRelationCanConnectOnCreate
+  ///@DtoRelationCanCreateOnUpdate
+  ///@DtoRelationCanConnectOnUpdate
+  participante Participante? @relation(fields: [participanteId], references: [id])
+  ///@DtoRelationCanCreateOnCreate
+  ///@DtoRelationCanConnectOnCreate
+  ///@DtoRelationCanCreateOnUpdate
+  ///@DtoRelationCanConnectOnUpdate
+  escolha      Escolha?      @relation(fields: [escolhaId], references: [id])
+
+  ///@DtoRelationCanCreateOnCreate
+  ///@DtoRelationCanConnectOnCreate
+  ///@DtoRelationCanCreateOnUpdate
+  ///@DtoRelationCanConnectOnUpdate
+  pauta   Pauta?  @relation(fields: [pautaId], references: [id])
+  pautaId String? @db.ObjectId
+
+  @@map("Votos")
+}
